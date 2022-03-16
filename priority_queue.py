@@ -57,9 +57,20 @@ class PriorityQueue:
         """
         insert new value to queue
         :param value:
-        :return:
+        :return: a boolean
         """
         element = self.type_element(push_index=self.__next_id, value=value)
         self.__set_items.add(element)
         self.__next_id += 1
         self._set_min_with_element(element)
+
+    def __eq__(self, other):
+        """
+
+        :param other:
+        :return: a boolean
+        """
+        return not (self.__set_items ^ other.__set_items)
+
+    def merge(self, other):
+        pass
