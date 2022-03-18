@@ -146,7 +146,9 @@ class RetroactivePriorityQueue:
         node_left.parent_key = parent.range_time
 
         # update node lists
-        self._items.update({range_time: parent, node_right.range_time: node_right, node_left.range_time: node_left})
+        self._items.update({parent.range_time: parent,
+                            node_right.range_time: node_right,
+                            node_left.range_time: node_left})
 
     def _update_parent_insert(self, parent: NODE_TYPE, new_node: NODE_TYPE):
         """
