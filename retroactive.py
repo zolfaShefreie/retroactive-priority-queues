@@ -186,7 +186,7 @@ class RetroactivePriorityQueue:
         else:
             self._push_non_root(new_node=new_node, subtree_root=self._items[self._root_key])
 
-    def _create_leaf_node(self, time: int, value) -> NODE_TYPE:
+    def _create_leaf_node(self, time: int, value, operation: Operations) -> NODE_TYPE:
         """
         create new leaf node
         :param time:
@@ -195,15 +195,14 @@ class RetroactivePriorityQueue:
         """
         data = PriorityQueue(started_at=self._new_id).push(value=value, key=time)
         self._new_id += 1
-        return self.NODE_TYPE(data=data, range_time=(time, time), start_operation=Operations.Push)
+        return self.NODE_TYPE(data=data, range_time=(time, time), start_operation=operation)
 
-    def insert(self, operation, time: int, value=None):
-        if operation == Operations.Push:
-            # TODO check it overlaps in leaf nodes if overlap update
-            new_node = self._create_leaf_node(time, value)
-            self._push(new_node=new_node)
-        elif operation == Operations.Pop:
-            pass
+    def insert(self, operation: Operations, time: int, value=None):
+        value = value if value else float('inf')
+
+        # TODO check it overlaps in leaf nodes if overlap update
+        new_node = self._create_leaf_node(time, value, operation)
+        self._push(new_node=new_node)
 
     def delete(self):
         pass
