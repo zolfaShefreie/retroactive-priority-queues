@@ -50,11 +50,11 @@ class BaseNode:
 
 
 class Node(BaseNode):
-    def __init__(self, range_time: tuple, data=None, delete_data=None, start_operation=None):
+    def __init__(self, range_time: tuple, data=None, deleted_data=None, start_operation=None):
         super().__init__()
         self.range_time = range_time
-        self.data = data
-        self.delete_data = delete_data
+        self.data = data if data else PriorityQueue()
+        self.deleted_data = deleted_data if deleted_data else PriorityQueue()
         self.start_operation = start_operation # that means the operation occurs in time = range_time[0]
 
     def __lt__(self, other):
@@ -76,20 +76,20 @@ class Node(BaseNode):
         """
         l_node = other if other < self else self
         g_node = self if self < other else other
-        union_queue = l_node.data.union(g_node.delete_data)
-        queue_1, queue_2 = union_queue.split_queue(union_queue.kth_min(k=len(g_node.delete_data)))
+        union_queue = l_node.data.union(g_node.deleted_data)
+        queue_1, queue_2 = union_queue.split_queue(union_queue.kth_min(k=len(g_node.deleted_data)))
         data = g_node.data.union(queue_1)
-        deleted_data = l_node.delete_data.union(queue_2)
+        deleted_data = l_node.deleted_data.union(queue_2)
         if apply:
             self.data = data
-            self.delete_data = deleted_data
+            self.deleted_data = deleted_data
             self.update_range(start=min(self.range_time[0], other.range_time[0]),
                               end=max(self.range_time[1], other.range_time[1]))
             return self
         else:
             return Node(range_time=(min(self.range_time[0], other.range_time[0]),
                                     max(self.range_time[1], other.range_time[1])),
-                        data=data, delete_data=deleted_data)
+                        data=data, deleted_data=deleted_data)
 
 
 class RetroactivePriorityQueue:
