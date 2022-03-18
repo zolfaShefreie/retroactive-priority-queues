@@ -194,6 +194,19 @@ class RetroactivePriorityQueue:
         parent.merge(new_node, apply=True)
         self._items[parent.range_time] = parent
 
+    def _update_parent_delete(self, child_node: NODE_TYPE):
+        """
+
+        :param child_node:
+        :return:
+        """
+        parent = self._items[child_node.parent_key]
+        merged_node = self._items[parent.left_key].merge(self._items[parent.right_key])
+        parent.update_range(start=merged_node.range_time[0], end=merged_node.range_time[1])
+        parent.data = merged_node.data
+        parent.deleted_data = parent.deleted_data
+        self._items[parent.range_time] = parent
+
     def _push(self, new_node):
         """
         insert a node to tree
@@ -258,5 +271,28 @@ class RetroactivePriorityQueue:
             self._items[key] = node
             key = node.parent_key
 
-    def delete(self):
-        pass
+    def _delete_sub_tree(self, node):
+        parent = self._items.pop(node.parent_key)
+        other_child = self._items.pop(parent.left_key if parent.right_key == node.range_time else parent.right_key)
+        other_child.parent_key = parent.parent_key
+        self._items[other_child.range_time] = other_child
+        return other_child
+
+    def delete(self, time: int):
+        """
+        delete a operation from tree
+        :param time:
+        :return:
+        """
+        all_leaves = self._get_all_leaves()
+        if time in [key[0] for key in all_leaves]:
+            key = [key for key in all_leaves if key[0] == time][0]
+            deleted_node = self._items.pop(key)
+            if key == self._root_key:
+                self._root_key = False
+            else:
+                key = self._delete_sub_tree(deleted_node).range_time
+                while key:
+                    node = self._items[key]
+                    self._update_parent_delete(child_node=node)
+                    key = node.parent_key
