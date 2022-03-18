@@ -67,15 +67,29 @@ class Node(BaseNode):
     def update_range(self, start, end):
         self.range_time = (start, end)
 
-    def merge_datas(self, other, apply=False):
+    def merge(self, other, apply=False):
         """
         merge the data and delete_data and return new Node or apply on self
         :param apply:
         :param other:
         :return:
         """
-
-        return Node(range_time=(0,0))
+        l_node = other if other < self else self
+        g_node = self if self < other else other
+        union_queue = l_node.data.union(g_node.delete_data)
+        queue_1, queue_2 = union_queue.split_queue(union_queue.kth_min(k=len(g_node.delete_data)))
+        data = g_node.data.union(queue_1)
+        deleted_data = l_node.delete_data.union(queue_2)
+        if apply:
+            self.data = data
+            self.delete_data = deleted_data
+            self.update_range(start=min(self.range_time[0], other.range_time[0]),
+                              end=max(self.range_time[1], other.range_time[1]))
+            return self
+        else:
+            return Node(range_time=(min(self.range_time[0], other.range_time[0]),
+                                    max(self.range_time[1], other.range_time[1])),
+                        data=data, delete_data=deleted_data)
 
 
 class RetroactivePriorityQueue:
@@ -117,9 +131,7 @@ class RetroactivePriorityQueue:
         :return:
         """
         # create parent node
-        parent = node_right.merge_datas(node_left)
-        parent.update_range(start=min(node_left.range_time[0], node_right.range_time[0]),
-                            end=max(node_right.range_time[1], node_left.range_time[1]))
+        parent = node_right.merge(node_left)
 
         # update the range_time of children
         node_left.range_time = (node_left.range_time[0], node_right.range_time[0] - 1)
@@ -157,15 +169,9 @@ class RetroactivePriorityQueue:
         :param new_node:
         :return:
         """
-        range_time = parent.range_time
-        if range_time[0] < new_node.range_time[0]:
-            range_time = (new_node.range_time[0], range_time[1])
-        elif range_time[1] > new_node.range_time[1]:
-            range_time = (range_time[0], new_node.range_time[1])
-
-        parent.range_time = range_time
-        parent.merge_datas(new_node, apply=True)
-        self._items[range_time] = parent
+        self._items.pop(parent.range_time)
+        parent.merge(new_node, apply=True)
+        self._items[parent.range_time] = parent
 
     def _push(self, new_node):
         """
