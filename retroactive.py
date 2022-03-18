@@ -59,12 +59,16 @@ class Node(BaseNode):
         self.start_operation = start_operation # that means the operation occurs in time = range_time[0]
 
     def __lt__(self, other):
-        #TODO change it
+        if self.left_key and self.left_key[1] > other.range_time[0]:
+            return True
         return (self.range_time[0] < other.range_time[0]) or \
                (self.range_time[0] >= other.range_time[0] and self.range_time[1] < other.range_time[1])
 
     def __gt__(self, other):
-        return True
+        if self.left_key and self.left_key[1] < other.range_time[0]:
+            return True
+        return (self.range_time[0] > other.range_time[0]) or \
+               (self.range_time[0] <= other.range_time[0] and self.range_time[1] > other.range_time[1])
 
     def __eq__(self, other):
         return self.range_time == other.range_time
