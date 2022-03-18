@@ -87,32 +87,47 @@ class RetroactivePriorityQueue:
             else:
                 self._create_subtree(node_left=subtree_root, node_right=new_node, new='right')
 
-    def _create_subtree(self, node_left, node_right, new: str):
+    def _create_subtree(self, node_left: NODE_TYPE, node_right: NODE_TYPE, new: str):
+        """
+        create new subtree because of adding new node and connect it to tree
+        :param node_left:
+        :param node_right:
+        :param new: with one is new node
+        :return:
+        """
+        # create parent node
         range_time = (min(node_left.range_time[0], node_right.range_time[0]),
                       max(node_right.range_time[1], node_left.range_time[1]))
         parent = self.NODE_TYPE(data=node_left.data.merge(node_right.data), range_time=range_time)
 
+        # update the range_time of children
         node_left.range_time = (node_left.range_time[0], node_right.range_time[0] - 1)
         node_right.range_time = (node_right.range_time[0], max(node_right.range_time[1], node_left.range_time[1]))
 
+        # connect to children
         parent.right_key = node_right.range_time
         parent.left_key = node_left.range_time
 
+        # connect to parent
         if new == 'right':
             parent.parent_key = node_left.parent_key
-            self._items[parent.parent_key].left_key = parent.range_time
             self._items.pop(node_left.range_time, None)
         else:
             parent.parent_key = node_right.parent_key
-            self._items[parent.parent_key].right_key = parent.range_time
             self._items.pop(node_right.range_time, None)
 
+        self._root_key = parent.range_time if parent.parent_key is None else self._root_key
+        if parent.parent_key:
+            self._items[parent.parent_key].left_key = parent.range_time
+
+        # connect children to parent
         node_right.parent_key = range_time
         node_left.parent_key = range_time
 
+        # update node lists
         self._items.update({range_time: parent, node_right.range_time: node_right, node_left.range_time: node_left})
 
-    def _update_parent_insert(self, parent: Node, new_node: Node):
+    def _update_parent_insert(self, parent: NODE_TYPE, new_node: NODE_TYPE):
         """
         update range_time and data of parent when a push happened
         :param parent:
@@ -149,7 +164,7 @@ class RetroactivePriorityQueue:
         :param value:
         :return: new node
         """
-        data = PriorityQueue(started_at=self._new_id).push(value)
+        data = PriorityQueue(started_at=self._new_id).push(value=value, key=time)
         self._new_id += 1
         return self.NODE_TYPE(data=data, range_time=(time, time), start_operation=Operations.Push)
 

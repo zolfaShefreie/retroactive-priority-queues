@@ -53,13 +53,14 @@ class PriorityQueue:
         """
         self.__min_value = min(self.__set_items)
 
-    def push(self, value):
+    def push(self, value, key=None):
         """
         insert new value to queue
+        :param key:
         :param value:
         :return: a boolean
         """
-        element = self.type_element(push_index=self.__next_id, value=value)
+        element = self.type_element(push_index=key if key else self.__next_id, value=value)
         self.__set_items.add(element)
         self.__next_id += 1
         self._set_min_with_element(element)
