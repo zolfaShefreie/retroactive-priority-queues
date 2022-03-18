@@ -13,6 +13,14 @@ class BaseNode:
         self._left_key = None
         self._right_key = None
         self._parent_key = None
+        self._is_leaf = False
+
+    def _update_is_leaf(self):
+        self._is_leaf = True if self._right_key or self._left_key else False
+
+    @property
+    def is_leaf(self):
+        return self._is_leaf
 
     @property
     def right_key(self):
@@ -21,6 +29,7 @@ class BaseNode:
     @right_key.setter
     def right_key(self, value: int):
         self._right_key = value
+        self._update_is_leaf()
 
     @property
     def left_key(self):
@@ -29,6 +38,7 @@ class BaseNode:
     @left_key.setter
     def left_key(self, value: int):
         self._left_key = value
+        self._update_is_leaf()
 
     @property
     def parent_key(self):
@@ -40,10 +50,11 @@ class BaseNode:
 
 
 class Node(BaseNode):
-    def __init__(self, data: PriorityQueue, range_time: tuple, start_operation=None):
+    def __init__(self, range_time: tuple, data=None, delete_data=None, start_operation=None):
         super().__init__()
         self.range_time = range_time
         self.data = data
+        self.delete_data = delete_data
         self.start_operation = start_operation # that means the operation occurs in time = range_time[0]
 
     def __lt__(self, other):
@@ -55,6 +66,16 @@ class Node(BaseNode):
 
     def update_range(self, start, end):
         self.range_time = (start, end)
+
+    def merge_datas(self, other, apply=False):
+        """
+        merge the data and delete_data and return new Node or apply on self
+        :param apply:
+        :param other:
+        :return:
+        """
+
+        return Node(range_time=(0,0))
 
 
 class RetroactivePriorityQueue:
@@ -96,9 +117,9 @@ class RetroactivePriorityQueue:
         :return:
         """
         # create parent node
-        range_time = (min(node_left.range_time[0], node_right.range_time[0]),
-                      max(node_right.range_time[1], node_left.range_time[1]))
-        parent = self.NODE_TYPE(data=node_left.data.merge(node_right.data), range_time=range_time)
+        parent = node_right.merge_datas(node_left)
+        parent.update_range(start=min(node_left.range_time[0], node_right.range_time[0]),
+                            end=max(node_right.range_time[1], node_left.range_time[1]))
 
         # update the range_time of children
         node_left.range_time = (node_left.range_time[0], node_right.range_time[0] - 1)
@@ -121,8 +142,8 @@ class RetroactivePriorityQueue:
             self._items[parent.parent_key].left_key = parent.range_time
 
         # connect children to parent
-        node_right.parent_key = range_time
-        node_left.parent_key = range_time
+        node_right.parent_key = parent.range_time
+        node_left.parent_key = parent.range_time
 
         # update node lists
         self._items.update({range_time: parent, node_right.range_time: node_right, node_left.range_time: node_left})
@@ -141,7 +162,7 @@ class RetroactivePriorityQueue:
             range_time = (range_time[0], new_node.range_time[1])
 
         parent.range_time = range_time
-        parent.data.merge(new_node.data)
+        parent.merge_datas(new_node, apply=True)
         self._items[range_time] = parent
 
     def _push(self, new_node):
