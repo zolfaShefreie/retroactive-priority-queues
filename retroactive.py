@@ -14,6 +14,7 @@ class BaseNode:
         self._right_key = None
         self._parent_key = None
         self._is_leaf = False
+        self.height = 0
 
     def _update_is_leaf(self):
         self._is_leaf = True if self._right_key or self._left_key else False
@@ -58,8 +59,12 @@ class Node(BaseNode):
         self.start_operation = start_operation # that means the operation occurs in time = range_time[0]
 
     def __lt__(self, other):
+        #TODO change it
         return (self.range_time[0] < other.range_time[0]) or \
-               (self.range_time[0] == other.range_time[0] and self.range_time[1] < other.range_time[1])
+               (self.range_time[0] >= other.range_time[0] and self.range_time[1] < other.range_time[1])
+
+    def __gt__(self, other):
+        return True
 
     def __eq__(self, other):
         return self.range_time == other.range_time
@@ -122,6 +127,86 @@ class RetroactivePriorityQueue:
         self._leaves = list()
         self._new_id = 0
 
+    def _change_height(self, parent_node) -> int:
+        """
+
+        :param parent_node:
+        :return:
+        """
+        parent_node.height = 1 + max(self._items[parent_node.left_key].parent_node,
+                                     self._items[parent_node.right_key].parent_node)
+        self._items[parent_node.range_time] = parent_node
+        return parent_node.height
+
+    def _get_balance_value(self, subtree_root) -> int:
+        """
+        :param subtree_root:
+        :return:
+        """
+        if not subtree_root:
+            return 0
+        return self._items[subtree_root.left_key].height - self._items[subtree_root.right_key].height
+
+    def _balance(self, subtree_root):
+        balance_value = self._get_balance_value(subtree_root)
+        left_balance_value = self._get_balance_value(self._items[subtree_root.left_key])
+        right_balance_value = self._get_balance_value(self._items[subtree_root.right_key])
+        # left left
+        if balance_value > 1 and left_balance_value > 0:
+            self._rotate(subtree_root, feature_name_root='left_key', feature_name_child='right_key')
+
+        # right right
+        if balance_value < -1 and right_balance_value < 0:
+            self._rotate(subtree_root, feature_name_root='right_key', feature_name_child='left_key')
+
+        # Left Right
+        if balance_value > 1 and left_balance_value < 0:
+            subtree_root = self._rotate(subtree_root, feature_name_root='left_key', feature_name_child='right_key',
+                                        same=False)
+            self._rotate(subtree_root, feature_name_root='right_key', feature_name_child='left_key')
+
+        # Right Left
+        if balance_value < -1 and right_balance_value > 0:
+            subtree_root = self._rotate(subtree_root, feature_name_root='right_key', feature_name_child='left_key',
+                                        same=False)
+            self._rotate(subtree_root, feature_name_root='left_key', feature_name_child='right_key')
+
+    def _rotate(self, subtree_root, feature_name_root: str, feature_name_child: str, same=True):
+        """
+        in this method feature_name_root and feature_name_child are opposite
+        :param subtree_root:
+        :param feature_name_root: the side that is going to root
+                                  for right right or right left -> right_key
+                                  for left left or left right -> left_key
+        :param feature_name_child: the side that is going to merge
+                                  for right right or right left -> left_key
+                                  for left left or left right -> right_key
+        :return:
+        """
+        child_new_parent = self._items[getattr(self._items[getattr(subtree_root, feature_name_root)],
+                                               feature_name_child)]
+        if not same:
+            self._update_parent_insert(parent=child_new_parent, new_node=self._items[getattr(subtree_root,
+                                                                                             feature_name_child)])
+        if feature_name_child == 'left_key':
+            # right left or right right
+            node_left = self._items[getattr(subtree_root, feature_name_child)]
+            node_right = self._items[child_new_parent.left_key] if not same else child_new_parent
+            new = 'left'
+        else:
+            # left right or left left
+            node_right = self._items[getattr(subtree_root, feature_name_child)]
+            node_left = self._items[child_new_parent.left_key] if not same else child_new_parent
+            new = 'right'
+
+        self._create_subtree(node_left=node_left, node_right=node_right, new=new)
+        node = self._items[getattr(subtree_root, feature_name_root)]
+        subtree_root.right_key = node.right_key
+        subtree_root.left_key = node.left_key
+        self._items.pop(node.range_time)
+        self._items[subtree_root.range_time] = subtree_root
+        return subtree_root
+
     def _push_non_root(self, new_node: NODE_TYPE, subtree_root: NODE_TYPE):
         """
         insert a non-root node to tree
@@ -129,13 +214,16 @@ class RetroactivePriorityQueue:
         :param subtree_root:
         :return:
         """
-        # TODO: balance the tree
+
         if (subtree_root.left_key is not None) and (subtree_root.right_key is not None):
             self._update_parent_insert(parent=subtree_root, new_node=new_node)
             if new_node < subtree_root:
                 self._push_non_root(new_node=new_node, subtree_root=self._items[subtree_root.left_key])
             else:
                 self._push_non_root(new_node=new_node, subtree_root=self._items[subtree_root.right_key])
+
+            self._change_height(subtree_root)
+            self._balance(subtree_root=subtree_root)
 
         else:
             if new_node < subtree_root:
@@ -177,6 +265,8 @@ class RetroactivePriorityQueue:
         # connect children to parent
         node_right.parent_key = parent.range_time
         node_left.parent_key = parent.range_time
+
+        self._change_height(parent)
 
         # update node lists
         self._items.update({parent.range_time: parent,
@@ -295,4 +385,6 @@ class RetroactivePriorityQueue:
                 while key:
                     node = self._items[key]
                     self._update_parent_delete(child_node=node)
+                    self._change_height(node)
+                    self._balance(node)
                     key = node.parent_key
