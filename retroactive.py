@@ -91,6 +91,27 @@ class Node(BaseNode):
                                     max(self.range_time[1], other.range_time[1])),
                         data=data, deleted_data=deleted_data)
 
+    def update(self, new_value, operation: Operations):
+        """
+        update node data based on queue's element's changes
+        :param operation:
+        :param new_value:
+        :return:
+        """
+        self.start_operation = operation
+        if len(self.data) > 0:
+            pre_item = self.data.min_value
+            self.data.remove(pre_item)
+            self.data.push(new_value, pre_item.put_index)
+        elif len(self.deleted_data) > 0:
+            pre_value = self.deleted_data.min_value
+            self.deleted_data.remove(pre_value)
+            self.deleted_data.push(new_value, pre_value.put_index)
+
+        all_elements = self.data.union(self.deleted_data)
+        len_deleted = len(self.deleted_data)
+        self.data, self.deleted_data = all_elements.split_queue(all_elements.kth_min(k=len_deleted))
+
 
 class RetroactivePriorityQueue:
     NODE_TYPE = Node
@@ -195,14 +216,47 @@ class RetroactivePriorityQueue:
         """
         data = PriorityQueue(started_at=self._new_id).push(value=value, key=time)
         self._new_id += 1
-        return self.NODE_TYPE(data=data, range_time=(time, time), start_operation=operation)
+        if operation == Operations.Pop:
+            self.NODE_TYPE(deleted_data=data, range_time=(time, time), start_operation=operation)
+        else:
+            return self.NODE_TYPE(data=data, range_time=(time, time), start_operation=operation)
+
+    def _get_all_leaves(self):
+        """
+        :return: a list of leaf keys
+        """
+        return [key for key, value in self._items.items() if value.is_leaf]
 
     def insert(self, operation: Operations, time: int, value=None):
+        """
+        insert a node to tree
+        :param operation:
+        :param time:
+        :param value:
+        :return:
+        """
         value = value if value else float('inf')
+        all_leaves = self._get_all_leaves()
+        if time in [key[0] for key in all_leaves]:
+            key = [key for key in all_leaves if key[0] == time][0]
+            self._update(operation=operation, key=key, value=value)
+        else:
+            new_node = self._create_leaf_node(time, value, operation)
+            self._push(new_node=new_node)
 
-        # TODO check it overlaps in leaf nodes if overlap update
-        new_node = self._create_leaf_node(time, value, operation)
-        self._push(new_node=new_node)
+    def _update(self, operation, key, value=None):
+        """
+        overwrite one the node and it affection on tree
+        :param operation:
+        :param key:
+        :param value:
+        :return:
+        """
+        while key:
+            node = self._items.pop(key)
+            node.update(value, operation)
+            self._items[key] = node
+            key = node.parent_key
 
     def delete(self):
         pass

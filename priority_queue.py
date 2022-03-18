@@ -102,3 +102,14 @@ class PriorityQueue:
         """
         return PriorityQueue(items=[x for x in self.set_items if x <= split_element]), \
                PriorityQueue(items=[x for x in self.set_items if x > split_element])
+
+    def remove(self, item: ELEMENT_TYPE):
+        """
+        remove an element
+        :param item:
+        :return:
+        """
+        if item in self.set_items:
+            self.set_items.remove(item)
+            self._set_min()
+
