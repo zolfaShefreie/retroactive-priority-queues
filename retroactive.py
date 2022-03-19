@@ -102,8 +102,8 @@ class Node(BaseNode):
         g_node = other if self < other else self
         union_queue = l_node.data.union(g_node.deleted_data)
         queue_1, queue_2 = union_queue.split_queue(union_queue.kth_min(k=len(g_node.deleted_data)))
-        data = g_node.data.union(queue_1)
-        deleted_data = l_node.deleted_data.union(queue_2)
+        data = g_node.data.union(queue_2)
+        deleted_data = l_node.deleted_data.union(queue_1)
         if apply:
             self.data = data
             self.deleted_data = deleted_data
@@ -146,16 +146,19 @@ class FullRetroactivePriorityQueue:
         self._leaves = list()
         self._new_id = 0
 
-    def _change_height(self, parent_node) -> int:
+    def _change_height(self, node) -> int:
         """
 
-        :param parent_node:
+        :param node:
         :return:
         """
-        parent_node.height = 1 + max(self._items[parent_node.left_key].height,
-                                     self._items[parent_node.right_key].height)
-        self._items[parent_node.range_time] = parent_node
-        return parent_node.height
+        if node.is_leaf:
+            node.height = 0
+        else:
+            node.height = 1 + max(self._items[node.left_key].height,
+                                  self._items[node.right_key].height)
+        self._items[node.range_time] = node
+        return node.height
 
     def _get_balance_value(self, subtree_root) -> int:
         """
@@ -224,6 +227,12 @@ class FullRetroactivePriorityQueue:
         subtree_root.left_key = node.left_key
         self._items.pop(node.range_time)
         self._items[subtree_root.range_time] = subtree_root
+
+        left, right = self._items[subtree_root.left_key], self._items[subtree_root.right_key]
+        left.parent_key = right.parent_key = subtree_root.range_time
+        self._items[left.range_time] = left
+        self._items[right.range_time] = right
+
         return subtree_root
 
     def _push_non_root(self, new_node: NODE_TYPE, subtree_root: NODE_TYPE):
@@ -333,18 +342,36 @@ class FullRetroactivePriorityQueue:
 
         self._items[parent.range_time] = parent
 
-    def _update_parent_delete(self, child_node: NODE_TYPE):
+    def _update_parent_delete(self, parent: NODE_TYPE):
         """
 
-        :param child_node:
+        :param parent:
         :return:
         """
-        parent = self._items[child_node.parent_key]
+        self._items.pop(parent.range_time)
         merged_node = self._items[parent.left_key].merge(self._items[parent.right_key])
+
+        # update its parent link
+        if parent.parent_key:
+            parent_parent = self._items[parent.parent_key]
+            if parent_parent.right_key == parent.range_time:
+                parent_parent.right_key = merged_node.range_time
+            elif parent_parent.left_key == parent.range_time:
+                parent_parent.left_key = merged_node.range_time
+            self._items[parent_parent.range_time] = parent_parent
+        else:
+            self._root_key = merged_node.range_time
+        
         parent.update_range(start=merged_node.range_time[0], end=merged_node.range_time[1])
         parent.data = merged_node.data
-        parent.deleted_data = parent.deleted_data
+        parent.deleted_data = merged_node.deleted_data
         self._items[parent.range_time] = parent
+
+        # update its children link
+        left, right = self._items[parent.left_key], self._items[parent.right_key]
+        left.parent_key = right.parent_key = parent.range_time
+        self._items[left.range_time] = left
+        self._items[right.range_time] = right
 
     def _push(self, new_node):
         """
@@ -414,6 +441,15 @@ class FullRetroactivePriorityQueue:
         parent = self._items.pop(node.parent_key)
         other_child = self._items.pop(parent.left_key if parent.right_key == node.range_time else parent.right_key)
         other_child.parent_key = parent.parent_key
+
+        new_parent = self._items[other_child.parent_key]
+        if new_parent.right_key == parent.range_time:
+            new_parent.right_key = (other_child.range_time[0], other_child.range_time[0])
+        elif new_parent.left_key == parent.range_time:
+            new_parent.left = (other_child.range_time[0], other_child.range_time[0])
+        self._items[new_parent.range_time] = new_parent
+
+        other_child.update_range(start=other_child.range_time[0], end=other_child.range_time[0])
         self._items[other_child.range_time] = other_child
         return other_child
 
@@ -430,10 +466,10 @@ class FullRetroactivePriorityQueue:
             if key == self._root_key:
                 self._root_key = False
             else:
-                key = self._delete_sub_tree(deleted_node).range_time
+                key = self._delete_sub_tree(deleted_node).parent_key
                 while key:
                     node = self._items[key]
-                    self._update_parent_delete(child_node=node)
+                    self._update_parent_delete(parent=node)
                     self._change_height(node)
                     self._balance(node)
                     key = node.parent_key
@@ -533,5 +569,6 @@ if __name__ == "__main__":
     retroactive_queue.insert(operation=Operations.Push, time=0, value=8)
     retroactive_queue.insert(operation=Operations.Push, time=2, value=2)
     retroactive_queue.insert(operation=Operations.Push, time=5, value=1)
-    retroactive_queue.insert(operation=Operations.Push, time=8, value=0)
+    retroactive_queue.insert(operation=Operations.Pop, time=8, value=0)
+    retroactive_queue.delete(time=8)
     retroactive_queue.print()

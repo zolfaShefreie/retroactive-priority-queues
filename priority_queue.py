@@ -107,7 +107,7 @@ class PriorityQueue:
         new_set = set().union(self.set_items)
         for i in range(k-1):
             new_set.remove(min(new_set))
-        return min(new_set) if len(new_set) >0 else None
+        return min(new_set) if len(new_set) > 0 and k != 0 else None
 
     def split_queue(self, split_element: ELEMENT_TYPE):
         """
@@ -116,7 +116,7 @@ class PriorityQueue:
         :return:
         """
         if split_element is None:
-            return self, PriorityQueue()
+            return PriorityQueue(), self
         return PriorityQueue(items=[x for x in self.set_items if x <= split_element]), \
                PriorityQueue(items=[x for x in self.set_items if x > split_element])
 
