@@ -8,6 +8,12 @@ class Operations(enum.Enum):
     Pop = 2
 
 
+class Query(enum.Enum):
+    final_queue = 1
+    min_element = 2
+    max_element = 3
+
+
 class BaseNode:
     def __init__(self):
         self._left_key = None
@@ -392,3 +398,58 @@ class RetroactivePriorityQueue:
                     self._change_height(node)
                     self._balance(node)
                     key = node.parent_key
+
+    def _find_all_ranges(self, subtree_root: NODE_TYPE, time: int) -> set:
+        """
+        find all ranges that the make (- inf, time)
+        :param subtree_root:
+        :param time:
+        :return: a set of Node
+        """
+        result = set()
+        if subtree_root.range_time[1] <= time:
+            result.add(subtree_root)
+
+        elif subtree_root.range_time[0] > time:
+            result.add(self.NODE_TYPE(range_time=(-float('inf'), time)))
+
+        elif subtree_root.left_key is not None and subtree_root.right_key is not None:
+            if time > subtree_root.left_key[1]:
+                result.add(self._items[subtree_root.left_key])
+                result.add(self._find_all_ranges(self._items[subtree_root.right_key], time))
+            else:
+                result.add(self._find_all_ranges(self._items[subtree_root.left_key], time))
+
+        else:
+            result.add(subtree_root)
+
+        return result
+
+    def _get_data_until_time(self, time: int) -> NODE_TYPE:
+        """
+        get all ranges and make node (-inf, time)
+        :param time:
+        :return: a node
+        """
+        all_ranges = self._find_all_ranges(self._items[self._root_key], time)
+        final_node = min(all_ranges)
+        all_ranges.remove(final_node)
+        while all_ranges:
+            min_node = min(all_ranges)
+            final_node.merge(min_node, apply=True)
+            all_ranges.remove(min_node)
+        final_node.update_range(start=final_node.range_time[0], end=time)
+        return final_node
+
+    def query(self, time: int, query: Query):
+        """
+        query operation
+        :param time:
+        :param query:
+        :return:
+        """
+        node = self._get_data_until_time(time)
+        if query == Query.final_queue:
+            return node.data
+        if query == Query.min_element:
+            return node.data.min_value
