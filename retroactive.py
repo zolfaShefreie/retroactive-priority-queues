@@ -64,19 +64,34 @@ class Node(BaseNode):
         self.deleted_data = deleted_data if deleted_data else PriorityQueue()
         self.start_operation = start_operation # that means the operation occurs in time = range_time[0]
 
+    def __hash__(self):
+        return hash(self.range_time)
+
     def __lt__(self, other):
-        if self.left_key and not other.left_key and self.left_key[1] <= other.range_time[0]:
-            return True
-        if other.left_key and not self.left_key and other.left_key[1] >= self.range_time[0]:
-            return True
+        if self.left_key and not other.left_key:
+            if self.left_key[1] < other.range_time[0]:
+                return True
+            else:
+                return False
+        if other.left_key and not self.left_key:
+            if other.left_key[1] > self.range_time[0]:
+                return True
+            else:
+                return False
         return (self.range_time[0] < other.range_time[0]) or \
                (self.range_time[0] >= other.range_time[0] and self.range_time[1] < other.range_time[1])
 
     def __gt__(self, other):
-        if self.left_key and not other.left_key and self.left_key[1] > other.range_time[0]:
-            return True
-        if other.left_key and not self.left_key and other.left_key[1] < self.range_time[0]:
-            return True
+        if self.left_key and not other.left_key:
+            if self.left_key[1] > other.range_time[0]:
+                return True
+            else:
+                return False
+        if other.left_key and not self.left_key:
+            if other.left_key[1] < self.range_time[0]:
+                return True
+            else:
+                return False
         return (self.range_time[0] > other.range_time[0]) or \
                (self.range_time[0] <= other.range_time[0] and self.range_time[1] > other.range_time[1])
 
@@ -511,17 +526,14 @@ class FullRetroactivePriorityQueue:
         if subtree_root.range_time[1] <= time:
             result.add(subtree_root)
 
-        elif subtree_root.range_time[0] > time:
-            result.add(self.NODE_TYPE(range_time=(-float('inf'), time)))
-
         elif subtree_root.left_key is not None and subtree_root.right_key is not None:
-            if time > subtree_root.left_key[1]:
+            if time >= subtree_root.left_key[1]:
                 result.add(self._items[subtree_root.left_key])
-                result.add(self._find_all_ranges(self._items[subtree_root.right_key], time))
+                result = result.union(self._find_all_ranges(self._items[subtree_root.right_key], time))
             else:
-                result.add(self._find_all_ranges(self._items[subtree_root.left_key], time))
+                result = result.union(self._find_all_ranges(self._items[subtree_root.left_key], time))
 
-        else:
+        elif subtree_root.range_time[0] <= time:
             result.add(subtree_root)
 
         return result
@@ -598,7 +610,8 @@ if __name__ == "__main__":
     retroactive_queue.insert(operation=Operations.Push, time=5, value=1)
     retroactive_queue.insert(operation=Operations.Push, time=8, value=12)
     retroactive_queue.insert(operation=Operations.Pop, time=5)
-    #retroactive_queue.print()
+    # retroactive_queue.print()
     retroactive_queue.insert(operation=Operations.Push, time=7, value=5)
     # retroactive_queue.delete(time=5)
-    retroactive_queue.print()
+    # retroactive_queue.print()
+    print(retroactive_queue.query(Query.final_queue, time=7))
