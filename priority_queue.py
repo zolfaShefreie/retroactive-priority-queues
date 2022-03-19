@@ -66,7 +66,7 @@ class PriorityQueue:
         set min based on items
         :return:
         """
-        self._min_value = min(self.set_items)
+        self._min_value = None if len(self.set_items) <= 0 else min(self.set_items)
 
     def push(self, value, key=None):
         """
@@ -129,6 +129,9 @@ class PriorityQueue:
         if item in self.set_items:
             self.set_items.remove(item)
             self._set_min()
+
+    def is_exist(self, element):
+        return element in self.set_items
 
     def __str__(self):
         queue_sort = sorted(self.set_items, key=QueueElement.key_element)

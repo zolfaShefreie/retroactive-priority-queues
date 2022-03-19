@@ -115,26 +115,33 @@ class Node(BaseNode):
                                     max(self.range_time[1], other.range_time[1])),
                         data=data, deleted_data=deleted_data)
 
-    def update(self, new_value, operation: Operations):
+    def get_element_leaf(self):
+        if len(self.data) > 0:
+            return self.data.min_value
+        if len(self.deleted_data) > 0:
+            return self.deleted_data.min_value
+
+    def update(self, new_value, operation: Operations, pre_element):
         """
         update node and its element and  data based on queue's element's changes
+        :param pre_element:
         :param operation:
         :param new_value:
         :return:
         """
-        self.start_operation = operation
-        if len(self.data) > 0:
-            pre_item = self.data.min_value
-            self.data.remove(pre_item)
-            self.data.push(new_value, pre_item.put_index)
-        elif len(self.deleted_data) > 0:
-            pre_value = self.deleted_data.min_value
-            self.deleted_data.remove(pre_value)
-            self.deleted_data.push(new_value, pre_value.put_index)
+        if self.is_leaf:
+            self.start_operation = operation
+
+        if self.data.is_exist(pre_element):
+            self.data.remove(pre_element)
+            self.data.push(new_value, pre_element.put_index)
+        elif self.deleted_data.is_exist(pre_element):
+            self.deleted_data.remove(pre_element)
+            self.deleted_data.push(new_value, pre_element.put_index)
 
         all_elements = self.data.union(self.deleted_data)
         len_deleted = len(self.deleted_data)
-        self.data, self.deleted_data = all_elements.split_queue(all_elements.kth_min(k=len_deleted))
+        self.deleted_data, self.data = all_elements.split_queue(all_elements.kth_min(k=len_deleted))
 
 
 class FullRetroactivePriorityQueue:
@@ -431,9 +438,10 @@ class FullRetroactivePriorityQueue:
         :param value:
         :return:
         """
+        pre_element = self._items[key].get_element_leaf()
         while key:
             node = self._items.pop(key)
-            node.update(value, operation)
+            node.update(value, operation, pre_element)
             self._items[key] = node
             key = node.parent_key
 
@@ -569,6 +577,7 @@ if __name__ == "__main__":
     retroactive_queue.insert(operation=Operations.Push, time=0, value=8)
     retroactive_queue.insert(operation=Operations.Push, time=2, value=2)
     retroactive_queue.insert(operation=Operations.Push, time=5, value=1)
+    retroactive_queue.insert(operation=Operations.Pop, time=5)
     retroactive_queue.insert(operation=Operations.Pop, time=8, value=0)
-    retroactive_queue.delete(time=8)
+    # retroactive_queue.delete(time=5)
     retroactive_queue.print()
