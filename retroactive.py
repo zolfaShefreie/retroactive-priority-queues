@@ -79,6 +79,17 @@ class Node(BaseNode):
     def __eq__(self, other):
         return self.range_time == other.range_time
 
+    def to_str(self, max_height):
+        start = "".join("--" for _ in range(max_height - self.height + 1))
+        spaces = "".join("  " for _ in range(max_height - self.height + 1))
+        if len(spaces) > 0:
+            spaces = '|' + spaces[1:]
+        return f"{start}Node:\n" \
+               f"{spaces}range_time: {self.range_time}\n" \
+               f"{spaces}operation: {self.start_operation.name if self.start_operation else str()}\n" \
+               f"{spaces}current_data: {str(self.data)}\n" \
+               f"{spaces}deleted_data: {str(self.deleted_data)}\n|"
+
     def __str__(self):
         start = "".join("--" for _ in range(self.height))
         spaces = "".join("  " for _ in range(self.height))
@@ -86,7 +97,7 @@ class Node(BaseNode):
                f"{spaces}range_time: {self.range_time}\n" \
                f"{spaces}operation: {self.start_operation.name if self.start_operation else str()}\n" \
                f"{spaces}current_data: {str(self.data)}\n" \
-               f"{spaces}deleted_data: {str(self.deleted_data)}"
+               f"{spaces}deleted_data: {str(self.deleted_data)}\n"
 
     def update_range(self, start, end):
         self.range_time = (start, end)
@@ -134,10 +145,13 @@ class Node(BaseNode):
 
         if self.data.is_exist(pre_element):
             self.data.remove(pre_element)
-            self.data.push(new_value, pre_element.put_index)
         elif self.deleted_data.is_exist(pre_element):
             self.deleted_data.remove(pre_element)
+
+        if operation == Operations.Pop:
             self.deleted_data.push(new_value, pre_element.put_index)
+        elif operation == Operations.Push:
+            self.data.push(new_value, pre_element.put_index)
 
         all_elements = self.data.union(self.deleted_data)
         len_deleted = len(self.deleted_data)
@@ -537,7 +551,7 @@ class FullRetroactivePriorityQueue:
         if query == Query.min_element:
             return node.data.min_value
 
-    def print_subtree(self, subtree_root: NODE_TYPE):
+    def print_subtree(self, subtree_root: NODE_TYPE, max_height):
         """
         print subtree
         :param subtree_root: subtree_root node
@@ -545,15 +559,16 @@ class FullRetroactivePriorityQueue:
         """
         if subtree_root:
             if subtree_root.is_leaf:
-                print(subtree_root)
+                print(subtree_root.to_str(max_height))
             else:
-                self.print_subtree(self._items[subtree_root.left_key])
-                print(subtree_root)
-                self.print_subtree(self._items[subtree_root.right_key])
+                self.print_subtree(self._items[subtree_root.left_key], max_height)
+                print(subtree_root.to_str(max_height))
+                self.print_subtree(self._items[subtree_root.right_key], max_height)
 
     def print(self):
         if self._root_key:
-            self.print_subtree(self._items[self._root_key])
+            root = self._items[self._root_key]
+            self.print_subtree(root, root.height)
 
 
 class PartialRetroactivePriorityQueue(FullRetroactivePriorityQueue):
