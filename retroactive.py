@@ -65,13 +65,17 @@ class Node(BaseNode):
         self.start_operation = start_operation # that means the operation occurs in time = range_time[0]
 
     def __lt__(self, other):
-        if self.left_key and self.left_key[1] > other.range_time[0]:
+        if self.left_key and not other.left_key and self.left_key[1] <= other.range_time[0]:
+            return True
+        if other.left_key and not self.left_key and other.left_key[1] >= self.range_time[0]:
             return True
         return (self.range_time[0] < other.range_time[0]) or \
                (self.range_time[0] >= other.range_time[0] and self.range_time[1] < other.range_time[1])
 
     def __gt__(self, other):
-        if self.left_key and self.left_key[1] < other.range_time[0]:
+        if self.left_key and not other.left_key and self.left_key[1] > other.range_time[0]:
+            return True
+        if other.left_key and not self.left_key and other.left_key[1] < self.range_time[0]:
             return True
         return (self.range_time[0] > other.range_time[0]) or \
                (self.range_time[0] <= other.range_time[0] and self.range_time[1] > other.range_time[1])
@@ -80,8 +84,8 @@ class Node(BaseNode):
         return self.range_time == other.range_time
 
     def to_str(self, max_height):
-        start = "".join("--" for _ in range(max_height - self.height + 1))
-        spaces = "".join("  " for _ in range(max_height - self.height + 1))
+        start = "".join("----" for _ in range(max_height - self.height + 1))
+        spaces = "".join("    " for _ in range(max_height - self.height + 1))
         if len(spaces) > 0:
             spaces = '|' + spaces[1:]
         return f"{start}Node:\n" \
@@ -265,10 +269,10 @@ class FullRetroactivePriorityQueue:
         """
         if (subtree_root.left_key is not None) and (subtree_root.right_key is not None):
             self._update_parent_insert(parent=subtree_root, new_node=new_node)
-            if new_node < subtree_root:
-                self._push_non_root(new_node=new_node, subtree_root=self._items[subtree_root.left_key])
-            else:
+            if subtree_root < new_node:
                 self._push_non_root(new_node=new_node, subtree_root=self._items[subtree_root.right_key])
+            else:
+                self._push_non_root(new_node=new_node, subtree_root=self._items[subtree_root.left_key])
 
             self._change_height(subtree_root)
             self._balance(subtree_root=subtree_root)
@@ -592,7 +596,9 @@ if __name__ == "__main__":
     retroactive_queue.insert(operation=Operations.Push, time=0, value=8)
     retroactive_queue.insert(operation=Operations.Push, time=2, value=2)
     retroactive_queue.insert(operation=Operations.Push, time=5, value=1)
+    retroactive_queue.insert(operation=Operations.Push, time=8, value=12)
     retroactive_queue.insert(operation=Operations.Pop, time=5)
-    retroactive_queue.insert(operation=Operations.Pop, time=8, value=0)
+    #retroactive_queue.print()
+    retroactive_queue.insert(operation=Operations.Push, time=7, value=5)
     # retroactive_queue.delete(time=5)
     retroactive_queue.print()
