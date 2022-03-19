@@ -137,7 +137,7 @@ class Node(BaseNode):
         self.data, self.deleted_data = all_elements.split_queue(all_elements.kth_min(k=len_deleted))
 
 
-class RetroactivePriorityQueue:
+class FullRetroactivePriorityQueue:
     NODE_TYPE = Node
 
     def __int__(self):
@@ -450,7 +450,7 @@ class RetroactivePriorityQueue:
         final_node.update_range(start=final_node.range_time[0], end=time)
         return final_node
 
-    def query(self, time: int, query: Query):
+    def query(self, query: Query, time: int):
         """
         query operation
         :param time:
@@ -476,3 +476,18 @@ class RetroactivePriorityQueue:
             print(subtree_root)
             self.print_tree(self._items[subtree_root.right_key])
 
+
+class PartialRetroactivePriorityQueue(FullRetroactivePriorityQueue):
+
+    def query(self, query: Query, time=None):
+        """
+        query operation
+        :param time:
+        :param query:
+        :return:
+        """
+        node = self._items[self._root_key]
+        if query == Query.final_queue:
+            return node.data
+        if query == Query.min_element:
+            return node.data.min_value
