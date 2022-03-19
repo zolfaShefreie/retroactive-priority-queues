@@ -84,7 +84,7 @@ class Node(BaseNode):
         spaces = " ".join("" for _ in range(self.height))
         return f"{start}Node:\n" \
                f"{spaces}range_time: {self.range_time}\n" \
-               f"{spaces}operation: {self.start_operation if self.start_operation else str()}\n" \
+               f"{spaces}operation: {self.start_operation.name if self.start_operation else str()}\n" \
                f"{spaces}current_data: {str(self.data)}\n" \
                f"{spaces}deleted_data: {str(self.deleted_data)}"
 
