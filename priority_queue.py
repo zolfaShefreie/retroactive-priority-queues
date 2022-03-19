@@ -7,14 +7,25 @@ class QueueElement:
         self.value = value
 
     def __eq__(self, other):
-        return self.put_index == other.id and self.value == other.value
+        return self.put_index == other.put_index and self.value == other.value
 
     def __lt__(self, other):
         return (self.value < other.value) or \
-               (self.value == self.value and self.put_index < self.put_index)
+               (self.value == other.value and self.put_index < other.put_index)
+
+    def __le__(self, other):
+        return (self.value < other.value) or \
+               (self.value == other.value and self.put_index <= other.put_index)
+
+    def __gt__(self, other):
+        return (self.value > other.value) or \
+               (self.value == other.value and self.put_index > other.put_index)
 
     def __str__(self):
-        return print(f"Time: {self.put_index}, Value: {self.value}")
+        return f"(Time: {self.put_index}, Value: {self.value})"
+
+    def __hash__(self):
+        return hash((self.put_index, self.value))
 
     @staticmethod
     def key_element(element):
@@ -34,13 +45,6 @@ class PriorityQueue:
     def min_value(self):
         return self._min_value
 
-    def get_min(self):
-        """
-        get the minimum of
-        :return: QueueElement object
-        """
-        return self._min_value
-
     def pop(self):
         """
         delete the minimum item in queue
@@ -55,7 +59,7 @@ class PriorityQueue:
         :param element:
         :return:
         """
-        self._min_value = self._min_value if self._min_value < element else element
+        self._min_value = self._min_value if self._min_value is not None and self._min_value < element else element
 
     def _set_min(self):
         """
@@ -77,6 +81,10 @@ class PriorityQueue:
         self._set_min_with_element(element)
 
     def union(self, other):
+        """
+        :param other:
+        :return:
+        """
         return PriorityQueue(items=self.set_items.union(other.set_items))
 
     def __eq__(self, other):
@@ -96,10 +104,10 @@ class PriorityQueue:
         :param k:
         :return:
         """
-        new_set = set(self.set_items)
+        new_set = set().union(self.set_items)
         for i in range(k-1):
-            new_set.remove(max(new_set))
-        return max(new_set)
+            new_set.remove(min(new_set))
+        return min(new_set)
 
     def split_queue(self, split_element: ELEMENT_TYPE):
         """
@@ -121,6 +129,5 @@ class PriorityQueue:
             self._set_min()
 
     def __str__(self):
-        queue = sorted(self.set_items, key=QueueElement.key_element)
-        return "|".join(queue)
-
+        queue_sort = sorted(self.set_items, key=QueueElement.key_element)
+        return "|" + "|".join([str(each) for each in queue_sort]) + "|"
