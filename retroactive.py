@@ -79,6 +79,15 @@ class Node(BaseNode):
     def __eq__(self, other):
         return self.range_time == other.range_time
 
+    def __str__(self):
+        start = "-".join("" for _ in range(self.height))
+        spaces = " ".join("" for _ in range(self.height))
+        return f"{start}Node:\n" \
+               f"{spaces}range_time: {self.range_time}\n" \
+               f"{spaces}operation: {self.start_operation if self.start_operation else str()}\n" \
+               f"{spaces}current_data: {str(self.data)}\n" \
+               f"{spaces}deleted_data: {str(self.deleted_data)}"
+
     def update_range(self, start, end):
         self.range_time = (start, end)
 
@@ -453,3 +462,17 @@ class RetroactivePriorityQueue:
             return node.data
         if query == Query.min_element:
             return node.data.min_value
+
+    def print_tree(self, subtree_root: NODE_TYPE):
+        """
+        print subtree
+        :param subtree_root: subtree_root node
+        :return:
+        """
+        if subtree_root.is_leaf:
+            print(subtree_root)
+        else:
+            self.print_tree(self._items[subtree_root.left_key])
+            print(subtree_root)
+            self.print_tree(self._items[subtree_root.right_key])
+

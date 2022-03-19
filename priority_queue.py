@@ -13,6 +13,13 @@ class QueueElement:
         return (self.value < other.value) or \
                (self.value == self.value and self.put_index < self.put_index)
 
+    def __str__(self):
+        return print(f"Time: {self.put_index}, Value: {self.value}")
+
+    @staticmethod
+    def key_element(element):
+        return element.put_index
+
 
 class PriorityQueue:
     ELEMENT_TYPE = QueueElement
@@ -112,4 +119,8 @@ class PriorityQueue:
         if item in self.set_items:
             self.set_items.remove(item)
             self._set_min()
+
+    def __str__(self):
+        queue = sorted(self.set_items, key=QueueElement.key_element)
+        return "|".join(queue)
 
