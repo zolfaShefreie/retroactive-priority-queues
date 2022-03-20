@@ -216,6 +216,7 @@ class FullRetroactivePriorityQueue:
         else:
             node.height = 1 + max(self._items[node.left_key].height,
                                   self._items[node.right_key].height)
+        # update on nodes
         self._items[node.range_time] = node
         return node.height
 
@@ -331,6 +332,8 @@ class FullRetroactivePriorityQueue:
         if new == 'right':
             parent.parent_key = node_left.parent_key
             self._items.pop(node_left.range_time, None)
+
+            # update parent links of new subtree
             if parent.parent_key:
                 parent_parent = self._items[parent.parent_key]
                 if parent_parent.left_key == node_left.range_time:
@@ -342,6 +345,8 @@ class FullRetroactivePriorityQueue:
         else:
             parent.parent_key = node_right.parent_key
             self._items.pop(node_right.range_time, None)
+
+            # update parent links of new subtree
             if parent.parent_key:
                 parent_parent = self._items[parent.parent_key]
                 if parent_parent.left_key == node_right.range_time:
@@ -385,6 +390,7 @@ class FullRetroactivePriorityQueue:
         if parent.parent_key is None:
             self._root_key = parent.range_time
         else:
+            # update parent links of parent
             parent_parent = self._items[parent.parent_key]
             if parent_parent.right_key == pre_range_time:
                 parent_parent.right_key = parent.range_time
@@ -392,6 +398,7 @@ class FullRetroactivePriorityQueue:
                 parent_parent.left_key = parent.range_time
             self._items[parent_parent.range_time] = parent_parent
 
+        # update children links
         left = self._items[parent.left_key]
         left.parent_key = parent.range_time
         self._items[left.range_time] = left
@@ -498,11 +505,17 @@ class FullRetroactivePriorityQueue:
             key = node.parent_key
 
     def _delete_sub_tree(self, node):
+        """
+
+        :param node:
+        :return:
+        """
         parent = self._items.pop(node.parent_key)
         other_child = self._items.pop(parent.left_key if parent.right_key == node.range_time else parent.right_key)
         other_child.parent_key = parent.parent_key
 
         if other_child.parent_key is not None:
+            # update parent links of old subtree
             new_parent = self._items[other_child.parent_key]
             if new_parent.right_key == parent.range_time:
                 new_parent.right_key = (other_child.range_time[0], other_child.range_time[0])
@@ -565,14 +578,15 @@ class FullRetroactivePriorityQueue:
         :return: a node
         """
         all_ranges = self._find_all_ranges(self._items[self._root_key], time)
-        final_node = min(all_ranges)
-        all_ranges.remove(final_node)
-        while all_ranges:
-            min_node = min(all_ranges)
-            final_node.merge(min_node, apply=True)
-            all_ranges.remove(min_node)
-        final_node.update_range(start=final_node.range_time[0], end=time)
-        return final_node
+        if len(all_ranges) > 0:
+            final_node = min(all_ranges)
+            all_ranges.remove(final_node)
+            while all_ranges:
+                min_node = min(all_ranges)
+                final_node.merge(min_node, apply=True)
+                all_ranges.remove(min_node)
+            final_node.update_range(start=final_node.range_time[0], end=time)
+            return final_node
 
     def query(self, query: Query, time: int):
         """
@@ -582,14 +596,18 @@ class FullRetroactivePriorityQueue:
         :return:
         """
         node = self._get_data_until_time(time)
-        if query == Query.FinalQueue:
-            return node.data
-        if query == Query.Minimum:
-            return node.data.min_value
+        if node:
+            if query == Query.FinalQueue:
+                return node.data
+            if query == Query.Minimum:
+                return node.data.min_value
+        else:
+            return "No Data"
 
     def print_subtree(self, subtree_root: NODE_TYPE, max_height):
         """
         print subtree
+        :param max_height: height of root
         :param subtree_root: subtree_root node
         :return:
         """
@@ -633,5 +651,5 @@ if __name__ == "__main__":
     # retroactive_queue.print()
     retroactive_queue.insert(operation=InsertOperations.Push, time=7, value=5)
     # retroactive_queue.delete(time=5)
-    # retroactive_queue.print()
+    retroactive_queue.print()
     print(retroactive_queue.query(Query.FinalQueue, time=7))
