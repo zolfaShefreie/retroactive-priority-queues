@@ -117,23 +117,19 @@ class UserInterface:
 
     @classmethod
     def run(cls):
-        # try:
+        try:
             retroactive_class = cls.get_type_class()
             retroactive_obj = retroactive_class()
             while True:
-
                     function, kwargs = cls.get_retroactive_operation(retroactive_obj)
-
                     result = function(**kwargs)
                     if result:
                         print(result)
                     else:
                         retroactive_obj.print()
-                # except Exception as e :
-                #     print(e)
-                #     break
-        # except:
-        #     pass
+        except:
+            pass
+
 
 if __name__ == "__main__":
     UserInterface.run()
