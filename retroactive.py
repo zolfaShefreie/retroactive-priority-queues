@@ -3,15 +3,36 @@ import enum
 from priority_queue import PriorityQueue
 
 
-class Operations(enum.Enum):
+class Enum(enum.Enum):
+    @classmethod
+    def get_inverse_dict(cls):
+        inverse_dict = dict()
+        for each in cls:
+            inverse_dict[each.value] = each
+        return inverse_dict
+
+    @classmethod
+    def get_dict(cls):
+        enum_dict = dict()
+        for each in cls:
+            enum_dict[each.name] = each.value
+        return enum_dict
+
+
+class InsertOperations(Enum):
     Push = 1
     Pop = 2
 
 
-class Query(enum.Enum):
-    final_queue = 1
-    min_element = 2
-    max_element = 3
+class Operations(Enum):
+    Insert = 1
+    Delete = 2
+    Query = 3
+
+
+class Query(Enum):
+    FinalQueue = 1
+    Minimum = 2
 
 
 class BaseNode:
@@ -105,18 +126,16 @@ class Node(BaseNode):
             spaces = '|' + spaces[1:]
         return f"{start}Node:\n" \
                f"{spaces}range_time: {self.range_time}\n" \
-               f"{spaces}operation: {self.start_operation.name if self.start_operation else str()}\n" \
+               f"{spaces}operation: {self.start_operation if self.start_operation else str()}\n" \
                f"{spaces}current_data: {str(self.data)}\n" \
                f"{spaces}deleted_data: {str(self.deleted_data)}\n|"
 
     def __str__(self):
-        start = "".join("--" for _ in range(self.height))
-        spaces = "".join("  " for _ in range(self.height))
-        return f"{start}Node:\n" \
-               f"{spaces}range_time: {self.range_time}\n" \
-               f"{spaces}operation: {self.start_operation.name if self.start_operation else str()}\n" \
-               f"{spaces}current_data: {str(self.data)}\n" \
-               f"{spaces}deleted_data: {str(self.deleted_data)}\n"
+        return f"Node:\n" \
+               f"range_time: {self.range_time}\n" \
+               f"operation: {self.start_operation if self.start_operation else str()}\n" \
+               f"current_data: {str(self.data)}\n" \
+               f"deleted_data: {str(self.deleted_data)}\n"
 
     def update_range(self, start, end):
         self.range_time = (start, end)
@@ -151,7 +170,7 @@ class Node(BaseNode):
         if len(self.deleted_data) > 0:
             return self.deleted_data.min_value
 
-    def update(self, new_value, operation: Operations, pre_element):
+    def update(self, new_value, operation: InsertOperations, pre_element):
         """
         update node and its element and  data based on queue's element's changes
         :param pre_element:
@@ -167,9 +186,9 @@ class Node(BaseNode):
         elif self.deleted_data.is_exist(pre_element):
             self.deleted_data.remove(pre_element)
 
-        if operation == Operations.Pop:
+        if operation == InsertOperations.Pop:
             self.deleted_data.push(new_value, pre_element.put_index)
-        elif operation == Operations.Push:
+        elif operation == InsertOperations.Push:
             self.data.push(new_value, pre_element.put_index)
 
         all_elements = self.data.union(self.deleted_data)
@@ -426,7 +445,7 @@ class FullRetroactivePriorityQueue:
         else:
             self._push_non_root(new_node=new_node, subtree_root=self._items[self._root_key])
 
-    def _create_leaf_node(self, time: int, value, operation: Operations) -> NODE_TYPE:
+    def _create_leaf_node(self, time: int, value, operation: InsertOperations) -> NODE_TYPE:
         """
         create new leaf node
         :param time:
@@ -435,7 +454,7 @@ class FullRetroactivePriorityQueue:
         """
         data = PriorityQueue()
         data.push(value=value, key=time)
-        if operation == Operations.Pop:
+        if operation == InsertOperations.Pop:
             return self.NODE_TYPE(deleted_data=data, range_time=(time, time), start_operation=operation)
         else:
             return self.NODE_TYPE(data=data, range_time=(time, time), start_operation=operation)
@@ -446,7 +465,7 @@ class FullRetroactivePriorityQueue:
         """
         return [key for key, value in self._items.items() if value.is_leaf]
 
-    def insert(self, operation: Operations, time: int, value=None):
+    def insert(self, operation: InsertOperations, time: int, value=None):
         """
         insert a node to tree
         :param operation:
@@ -454,7 +473,7 @@ class FullRetroactivePriorityQueue:
         :param value:
         :return:
         """
-        value = value if value is not None and operation == Operations.Push else float('inf')
+        value = value if value is not None and operation == InsertOperations.Push else float('inf')
         all_leaves = self._get_all_leaves()
         if time in [key[0] for key in all_leaves]:
             key = [key for key in all_leaves if key[0] == time][0]
@@ -562,9 +581,9 @@ class FullRetroactivePriorityQueue:
         :return:
         """
         node = self._get_data_until_time(time)
-        if query == Query.final_queue:
+        if query == Query.FinalQueue:
             return node.data
-        if query == Query.min_element:
+        if query == Query.Minimum:
             return node.data.min_value
 
     def print_subtree(self, subtree_root: NODE_TYPE, max_height):
@@ -597,21 +616,21 @@ class PartialRetroactivePriorityQueue(FullRetroactivePriorityQueue):
         :return:
         """
         node = self._items[self._root_key]
-        if query == Query.final_queue:
+        if query == Query.FinalQueue:
             return node.data
-        if query == Query.min_element:
+        if query == Query.Minimum:
             return node.data.min_value
 
 
 if __name__ == "__main__":
     retroactive_queue = FullRetroactivePriorityQueue()
-    retroactive_queue.insert(operation=Operations.Push, time=0, value=8)
-    retroactive_queue.insert(operation=Operations.Push, time=2, value=2)
-    retroactive_queue.insert(operation=Operations.Push, time=5, value=1)
-    retroactive_queue.insert(operation=Operations.Push, time=8, value=12)
-    retroactive_queue.insert(operation=Operations.Pop, time=5)
+    retroactive_queue.insert(operation=InsertOperations.Push, time=0, value=8)
+    retroactive_queue.insert(operation=InsertOperations.Push, time=2, value=2)
+    retroactive_queue.insert(operation=InsertOperations.Push, time=5, value=1)
+    retroactive_queue.insert(operation=InsertOperations.Push, time=8, value=12)
+    retroactive_queue.insert(operation=InsertOperations.Pop, time=5)
     # retroactive_queue.print()
-    retroactive_queue.insert(operation=Operations.Push, time=7, value=5)
+    retroactive_queue.insert(operation=InsertOperations.Push, time=7, value=5)
     # retroactive_queue.delete(time=5)
     # retroactive_queue.print()
-    print(retroactive_queue.query(Query.final_queue, time=7))
+    print(retroactive_queue.query(Query.FinalQueue, time=7))
