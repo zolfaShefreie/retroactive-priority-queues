@@ -502,12 +502,13 @@ class FullRetroactivePriorityQueue:
         other_child = self._items.pop(parent.left_key if parent.right_key == node.range_time else parent.right_key)
         other_child.parent_key = parent.parent_key
 
-        new_parent = self._items[other_child.parent_key]
-        if new_parent.right_key == parent.range_time:
-            new_parent.right_key = (other_child.range_time[0], other_child.range_time[0])
-        elif new_parent.left_key == parent.range_time:
-            new_parent.left = (other_child.range_time[0], other_child.range_time[0])
-        self._items[new_parent.range_time] = new_parent
+        if other_child.parent_key is not None:
+            new_parent = self._items[other_child.parent_key]
+            if new_parent.right_key == parent.range_time:
+                new_parent.right_key = (other_child.range_time[0], other_child.range_time[0])
+            elif new_parent.left_key == parent.range_time:
+                new_parent.left = (other_child.range_time[0], other_child.range_time[0])
+            self._items[new_parent.range_time] = new_parent
 
         other_child.update_range(start=other_child.range_time[0], end=other_child.range_time[0])
         self._items[other_child.range_time] = other_child
